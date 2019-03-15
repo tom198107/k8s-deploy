@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # check default key file
-file="/home/k8s/.ssh/id_rsa.pub"
+file="/root/.ssh/id_rsa.pub"
 if [ -f "${file}" ]
 then
     echo "Use your default key file: ${file}"
@@ -23,7 +23,7 @@ do
     if [ "$?" = "1" ]
     then
         echo "Copying the key to [$ip]"
-        ssh-copy-id k8s@$ip
+        ssh-copy-id root@$ip
     else
         echo "Skip the invalid IP address: $ip"
     fi
