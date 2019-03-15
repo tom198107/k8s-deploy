@@ -13,12 +13,12 @@
 #     - { role: k8s/etcd }
 
 - hosts: k8s-master
- roles:
-   - { role: k8s/master }
+  roles:
+    - { role: k8s/master }
 
 - hosts: k8s-workers
- roles:
-   - { role: k8s/node }
+  roles:
+    - { role: k8s/node }
 
 # if you wanna add new node to cluster ,you can add new node to new-workers,new-master,new-etcdservers in inventory file
 # uncomment the flow block
