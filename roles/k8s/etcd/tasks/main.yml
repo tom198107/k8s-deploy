@@ -1,0 +1,85 @@
+- name: "Sync etcd certs  to every node"
+  become: yes
+  become_user: root
+  become_method: sudo
+  synchronize: src=/etc/kubernetes/ssl/ dest=/etc/kubernetes/ssl/
+  delegate_to: "{{groups['etcd-servers'][0]}}"
+
+- name: create user etcd 
+  become: yes
+  become_user: root
+  become_method: sudo
+  user: name=etcd
+
+- name: check etcd path exists
+  stat:
+    path: /opt/etcd
+  register: result
+
+- name: create k8s's components and certs path
+  become: yes
+  become_user: root
+  become_method: sudo
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "/opt/etcd"
+  when: not result.stat.exists
+
+- name: auth user etcd 
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: "{{ item }}"
+  with_items:
+    - chown -R etcd:etcd /opt/etcd
+
+- name: "unarchive etcd require bin packages"
+  become: yes
+  become_user: root
+  become_method: sudo
+  unarchive:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "jdk-8u201-linux-x64.tar.gz", dest: "/opt/k8s" }
+    - { src: "etcd-v3.1.12-linux-amd64.tar.gz", dest: "/opt/k8s" }
+
+- name: "Install etcd require bin packages"
+  become: yes
+  become_user: root
+  become_method: sudo
+  copy: src="{{ item.src }}" dest="{{ item.dest }}" owner=k8s group=k8s mode=0755
+  with_items:
+    - { src: "/opt/k8s/etcd-v3.1.12-linux-amd64/etcd", dest: "/usr/bin/etcd" }
+    - { src: "/opt/k8s/etcd-v3.1.12-linux-amd64/etcdctl", dest: "/usr/bin/etcdctl" }
+
+- name: "Install etcd  require service"
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  become: yes
+  with_items:
+    # - { src: "flannel.conf.j2", dest: "/etc/systemd/system/docker.service.d/flannel.conf" }
+    - { src: "etcd.service.j2", dest: "/etc/systemd/system/etcd.service" }
+  # when: "'etcd-servers' in group_names"
+
+# - name: "Set flanneld subnet"
+#   shell: "iptables -t nat -F && ifconfig docker0 down &&  brctl delbr docker0"
+
+- name: "Start all service on etcd"
+  become: yes
+  become_user: root
+  become_method: sudo
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  with_items:
+    - etcd
+    # - flanneld
+    - docker
+  # when: "'etcd-servers' in group_names"
+

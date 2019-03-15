@@ -1,0 +1,10 @@
+# Flanneld configuration options  
+
+# etcd address
+FLANNEL_ETCD_ENDPOINTS="{% for host in groups["etcd-servers"] %}https://{{ host }}:2379,{% endfor %}"
+
+# config flannel/network
+FLANNEL_ETCD_PREFIX="/flannel/network"
+
+# flanneld add etcd ssl auth
+FLANNEL_OPTIONS="-ip-masq=true -etcd-cafile=/etc/kubernetes/ssl/ca.pem -etcd-certfile=/etc/kubernetes/ssl/etcd.pem -etcd-keyfile=/etc/kubernetes/ssl/etcd-key.pem -iface=eth0"

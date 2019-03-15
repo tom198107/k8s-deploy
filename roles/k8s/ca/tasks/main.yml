@@ -1,0 +1,50 @@
+---
+
+- name: copy k8s ca tools and cert files
+  become: yes
+  become_user: root
+  become_method: sudo
+  copy: src={{item.src}} dest={{item.dest}} 
+  with_items:
+    - { src: 'cfssl-certinfo_linux-amd64', dest: '/opt/local/cfssl'}
+    - { src: 'cfssl_linux-amd64', dest: '/opt/local/cfssl'}
+    - { src: 'cfssljson_linux-amd64', dest: '/opt/local/cfssl'}
+    - { src: 'config.json', dest: '/opt/ssl'}
+    - { src: 'csr.json', dest: '/opt/ssl'}
+    - { src: 'etcd-csr.json', dest: '/opt/ssl'}
+    - { src: 'admin-csr.json', dest: '/opt/ssl'}
+    - { src: 'kubernetes-csr.json', dest: '/opt/ssl'}
+    - { src: 'kube-proxy-csr.json', dest: '/opt/ssl'}
+  # when: not result.stat.exists
+
+- name: rename k8s ca tools and get cert
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: "{{item}}"
+  with_items:
+    - mv /opt/local/cfssl/cfssl_linux-amd64 /opt/local/cfssl/cfssl
+    - mv /opt/local/cfssl/cfssljson_linux-amd64 /opt/local/cfssl/cfssljson
+    - mv /opt/local/cfssl/cfssl-certinfo_linux-amd64 /opt/local/cfssl/cfssl-certinfo
+    - chmod +x /opt/local/cfssl/*
+
+- name: get k8s and etcd cert
+  shell: "{{item}}"
+  args:
+    chdir: /opt/ssl
+  become: yes
+  with_items:    
+    - /opt/local/cfssl/cfssl gencert -initca csr.json | /opt/local/cfssl/cfssljson -bare ca
+    - cp /opt/ssl/*.pem /etc/kubernetes/ssl
+    - cp /opt/ssl/ca.csr /etc/kubernetes/ssl
+    - /opt/local/cfssl/cfssl gencert -ca=/opt/ssl/ca.pem -ca-key=/opt/ssl/ca-key.pem -config=/opt/ssl/config.json -profile=kubernetes etcd-csr.json | /opt/local/cfssl/cfssljson -bare etcd
+    - /opt/local/cfssl/cfssl-certinfo -cert etcd.pem
+    - cp /opt/ssl/etcd*.pem /etc/kubernetes/ssl/
+    - chmod 644 /etc/kubernetes/ssl/etcd-key.pem
+    - /opt/local/cfssl/cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem -ca-key=/etc/kubernetes/ssl/ca-key.pem -config=/opt/ssl/config.json -profile=kubernetes admin-csr.json | /opt/local/cfssl/cfssljson -bare admin
+    - cp admin*.pem /etc/kubernetes/ssl/
+    - /opt/local/cfssl/cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem -ca-key=/etc/kubernetes/ssl/ca-key.pem -config=/opt/ssl/config.json -profile=kubernetes kubernetes-csr.json | /opt/local/cfssl/cfssljson -bare kubernetes
+    - cp kubernetes*.pem /etc/kubernetes/ssl/
+    - /opt/local/cfssl/cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem -ca-key=/etc/kubernetes/ssl/ca-key.pem -config=/opt/ssl/config.json -profile=kubernetes  kube-proxy-csr.json | /opt/local/cfssl/cfssljson -bare kube-proxy
+    - cp kube-proxy* /etc/kubernetes/ssl/
+ 

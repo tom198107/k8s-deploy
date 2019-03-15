@@ -1,0 +1,11 @@
+{
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ],
+  "log-driver": "json-file" ,
+  "log-opts": {
+  	"max-size": "3g"
+  },
+  "insecure-registries": ["{{groups['k8s-master'][0]}}:5000"] 
+}

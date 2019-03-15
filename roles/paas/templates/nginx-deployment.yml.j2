@@ -1,0 +1,19 @@
+---
+
+apiVersion: extensions/v1beta1 
+kind: Deployment 
+metadata: 
+  name: nginx-dm
+spec: 
+  replicas: 2
+  template: 
+    metadata: 
+      labels: 
+        name: nginx 
+    spec: 
+      containers: 
+        - name: nginx 
+          image: {{groups['k8s-master'][0]}}:5000/nginx:1.13.7-alpine 
+          imagePullPolicy: IfNotPresent
+          ports: 
+            - containerPort: 80

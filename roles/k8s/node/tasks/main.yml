@@ -1,0 +1,72 @@
+- name: "Sync bootstrap kubeconfig to every node"
+  synchronize: src={{ item.src }} dest={{ item.dest }}
+  delegate_to: "{{groups['k8s-workers'][0]}}"
+  with_items:
+    - { src: "/etc/kubernetes/", dest: "/etc/kubernetes/" }
+    - { src: "/etc/kubernetes/ssl", dest: "/etc/kubernetes/ssl/" }
+
+- name: check k8s path exists
+  stat:
+    path: /opt/k8s/kubernetes
+  register: result
+
+- name: unarchive k8s require bin packages
+  unarchive:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "kubernetes-server-linux-amd64.tar.gz", dest: "/opt/k8s" }
+  when: not result.stat.exists
+
+- name: Install k8s require bin packages
+  shell: "{{ item }}"
+  args:
+    chdir: /opt/k8s/kubernetes
+  with_items:
+    - cp -r server/bin/{kube-proxy,kubelet} /usr/local/bin/
+  when: not result.stat.exists
+
+- name: "Install k8s node require service"
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  become: yes
+  with_items:
+    - { src: "kubelet.service.j2", dest: "/etc/systemd/system/kubelet.service" }
+    - { src: "kube-proxy.service.j2", dest: "/etc/systemd/system/kube-proxy.service" }
+    - { src: "nginx.conf.j2", dest: "/etc/nginx/nginx.conf" }
+    - { src: "nginx-proxy.service.j2", dest: "/etc/systemd/system/nginx-proxy.service" }
+  when: "'k8s-workers' in group_names"
+
+- name: "Upload image"
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "pause-amd64.zip", dest: "/opt/k8s/pause-amd64.zip" }
+    - { src: "nginx.zip", dest: "/opt/k8s/nginx.zip" }
+
+- name: "Load images and auth file"
+  shell: "{{ item }}"
+  with_items:
+    - chmod +r /etc/nginx/nginx.conf
+    - docker load -i /opt/k8s/pause-amd64.zip
+    - docker load -i /opt/k8s/nginx.zip
+
+- name: "Delete csr auth file"
+  shell: "{{ item }}"
+  with_items:
+    - rm -rf /etc/kubernetes/ssl/kubelet-*
+    - rm -rf /etc/kubernetes/ssl/ssl
+
+- name: "Start kubelet service"
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  with_items:
+    - kubelet
+    - kube-proxy
+    - nginx-proxy
+  when: "'k8s-workers' in group_names"

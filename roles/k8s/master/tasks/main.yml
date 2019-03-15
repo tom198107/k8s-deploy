@@ -1,0 +1,103 @@
+- name: "Sync master certs  to every node"
+  synchronize: src=/etc/kubernetes/ssl/ dest=/etc/kubernetes/ssl/
+  delegate_to: "{{groups['k8s-master'][0]}}"
+
+- name: copy k8s cert files
+  copy: src={{item.src}} dest={{item.dest}} 
+  become: yes
+  with_items:
+    - { src: 'token.csv', dest: '/etc/kubernetes'}
+    - { src: 'audit-policy.yaml', dest: '/etc/kubernetes'}
+    - { src: 'tls-instructs-csr.yaml', dest: '/etc/kubernetes'}
+
+- name: check k8s path exists
+  stat:
+    path: /opt/k8s/kubernetes
+  register: result
+
+- name: "unarchive k8s require bin packages"
+  unarchive:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "kubernetes-server-linux-amd64.tar.gz", dest: "/opt/k8s" }
+  when: not result.stat.exists
+
+- name: "Install etcd require bin packages"
+  shell: "{{ item }}"
+  args:
+    chdir: /opt/k8s/kubernetes
+  with_items:
+    - cp -r server/bin/{kube-apiserver,kube-controller-manager,kube-scheduler,kubectl,kube-proxy,kubelet} /usr/local/bin/
+  when: not result.stat.exists
+
+- name: gencert kubenates cluster and client auth
+  shell: "{{ item }}"
+  with_items:    
+    - kubectl --help
+    - kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://{{groups['k8s-master'][0]}}:6443
+    - kubectl config set-credentials admin --client-certificate=/etc/kubernetes/ssl/admin.pem --embed-certs=true --client-key=/etc/kubernetes/ssl/admin-key.pem
+    - kubectl config set-context kubernetes --cluster=kubernetes --user=admin
+    - kubectl config use-context kubernetes
+
+- name: "Install k8s master require service"
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  become: yes
+  with_items:
+    - { src: "kube-apiserver.service.j2", dest: "/etc/systemd/system/kube-apiserver.service" }
+    - { src: "kube-controller-manager.service.j2", dest: "/etc/systemd/system/kube-controller-manager.service" }
+    - { src: "kube-scheduler.service.j2", dest: "/etc/systemd/system/kube-scheduler.service" }
+  when: "'k8s-master' in group_names"
+
+- name: "Start kube-apiserver service"
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  with_items:
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
+  when: "'k8s-master' in group_names"
+
+- name: create user clusterrolebinding
+  shell: "{{ item }}"
+  ignore_errors: yes
+  with_items:
+    - kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bootstrapper --user=kubelet-bootstrap
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
+
+- name: gencert kubenates cluster and client auth
+  shell: "{{ item }}"
+  ignore_errors: yes
+  with_items:    
+    - kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://{{groups['k8s-master'][0]}}:6443 --kubeconfig=bootstrap.kubeconfig
+    - kubectl config set-credentials kubelet-bootstrap --token=46a43c36dcf9061280cac9ff334b55d8 --kubeconfig=bootstrap.kubeconfig
+    - kubectl config set-context default --cluster=kubernetes --user=kubelet-bootstrap --kubeconfig=bootstrap.kubeconfig
+    - kubectl config use-context default --kubeconfig=bootstrap.kubeconfig
+    - cp bootstrap.kubeconfig /etc/kubernetes/
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
+
+- name: create ClusterRole for csr request auto-auth 
+  shell: "{{ item }}"
+  ignore_errors: yes
+  with_items:
+    - kubectl apply -f /etc/kubernetes/tls-instructs-csr.yaml
+    - kubectl create clusterrolebinding node-client-auto-approve-csr --clusterrole=system:certificates.k8s.io:certificatesigningrequests:nodeclient --group=system:bootstrappers
+    - kubectl create clusterrolebinding node-client-auto-renew-crt --clusterrole=system:certificates.k8s.io:certificatesigningrequests:selfnodeclient --group=system:nodes
+    - kubectl create clusterrolebinding node-server-auto-renew-crt --clusterrole=system:certificates.k8s.io:certificatesigningrequests:selfnodeserver --group=system:nodes
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
+
+- name: gencert kube-proxy kubeconfig file
+  shell: "{{ item }}"
+  ignore_errors: yes
+  with_items:    
+    - kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://{{groups['k8s-master'][0]}}:6443 --kubeconfig=kube-proxy.kubeconfig
+    - kubectl config set-credentials kube-proxy --client-certificate=/etc/kubernetes/ssl/kube-proxy.pem --client-key=/etc/kubernetes/ssl/kube-proxy-key.pem --embed-certs=true --kubeconfig=kube-proxy.kubeconfig
+    - kubectl config set-context default --cluster=kubernetes --user=kube-proxy --kubeconfig=kube-proxy.kubeconfig
+    - kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
+    - cp kube-proxy.kubeconfig /etc/kubernetes/
+  when: "ansible_ssh_host == groups['k8s-master'][0]"

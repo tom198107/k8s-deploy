@@ -1,0 +1,108 @@
+---
+# - name: "Standardizing localtime and timezone"
+#   copy: src={{item}} dest=/etc/{{item}} force=no owner=root group=root mode=0755
+#   with_items:
+#     - localtime
+#     - timezone
+
+- name: Prepare the storage directory for docker
+  file: path=/data01/docker state=directory
+
+- name: Unarchive docker binary to /opt
+  unarchive: src=docker-17.03.1-ce.tgz dest=/opt/docker
+  become: yes
+
+# - name: Move to /usr/bin
+#   shell: "mv /opt/docker/* /usr/bin/"
+#   become: yes
+
+- name: check docker path exists
+  stat:
+    path: /var/run/docker/
+  register: result
+
+- name: copy docker 、flannel binary and config file
+  copy: src={{item.src}} dest={{item.dest}} 
+  become: yes
+  with_items:    
+    - { src: 'docker-ce-selinux-17.03.1.ce-1.el7.centos.noarch.rpm', dest: '/opt/docker'}
+    - { src: 'docker-ce-17.03.0.ce-1.el7.centos.x86_64.rpm', dest: '/opt/docker'}
+    - { src: 'flannel-0.9.1-1.x86_64.rpm', dest: '/opt/k8s'}
+  when: not result.stat.exists
+
+- name: Install docker binary
+  yum: name={{item}}  state=present
+  become: yes
+  with_items:    
+    - yum-utils
+    - /opt/docker/docker-ce-selinux-17.03.1.ce-1.el7.centos.noarch.rpm
+    - /opt/docker/docker-ce-17.03.0.ce-1.el7.centos.x86_64.rpm
+  # when: not result.stat.exists
+
+- name: copy docker configuration 
+  copy: src={{item.src}} dest={{item.dest}} 
+  become: yes
+  with_items:
+    - { src: 'docker-options.conf', dest: '/etc/systemd/system/docker.service.d/'}
+    # - { src: 'docker-dns.conf', dest: '/etc/systemd/system/docker.service.d/'}
+  when: not result.stat.exists
+
+# - name: check flannel path exists
+#   stat:
+#     path: /usr/libexec/flannel
+#   register: result
+
+- name: Install flanneld binary
+  shell: 'rpm -ivh /opt/k8s/flannel-0.9.1-1.x86_64.rpm'
+  become: yes
+  ignore_errors: True
+  # when: not result.stat.exists
+
+- name: flanneld build file for docker
+  shell: 'sh /usr/libexec/flannel/mk-docker-opts.sh'
+  become: yes
+
+- name: copy docker and flannel service
+  copy: src={{item.src}} dest={{item.dest}} owner=root group=root mode=0644
+  become: yes
+  with_items:
+    - { src: 'docker.service', dest: '/etc/systemd/system/docker.service'}
+    - { src: 'flannel.conf', dest: '/etc/systemd/system/docker.service.d/flannel.conf'}
+
+- name: "Install flannel service and subnet"
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  become: yes
+  with_items:
+    - { src: 'docker-dns.conf.j2', dest: '/etc/systemd/system/docker.service.d/docker-dns.conf'}
+    - { src: 'daemon.json.j2', dest: '/etc/docker/daemon.json'}
+    - { src: "flanneld.j2", dest: "/etc/sysconfig/flanneld" }
+    - { src: "flanneld_subnet.j2", dest: "/opt/shell/flanneld_subnet.sh" }
+
+- name: "Set subnet"
+  shell: " sh /opt/shell/flanneld_subnet.sh "
+
+- name: Refresh docker service
+  systemd:
+    name: "{{ item }}"
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+  with_items:
+    - flanneld
+    - docker
+
+- name: Wait for docker service started
+  wait_for: path=/var/run/docker/libcontainerd/docker-containerd.sock timeout=300
+  become: yes
+
+- name: Verify docker installation
+  shell: docker version
+  become: yes
+
+# - name: be sure docker regsitry host is mapped
+#   lineinfile:
+#     dest: /etc/hosts
+#     line: '{{ docker_registry_host }} docker.wemeeting.huawei.com'
+#     state: present

@@ -1,0 +1,30 @@
+
+- name: "Mkdir /tmp/k8s/yml/"
+  file:
+    path: "/tmp/k8s/yml/"
+    state: directory
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
+
+- name: "Generate Deployment YAML"
+  template:
+    src: "{{component}}-{{type}}.yml.j2"
+    dest: "/tmp/k8s/yml/{{component}}-{{type}}.yml"
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
+
+- name: "set ingress label"
+  shell: "kubectl label nodes {{item.ip}} ingress=proxy"
+  with_items:
+    - { ip: '100.84.105.120' }
+    - { ip: '100.84.112.106'}
+  ignore_errors: True
+  when: "ansible_ssh_host == groups['k8s-master'][0] and component == 'ingress'"
+
+- name: "delete a kubernetes {{component}}-{{type}}"
+  shell: "kubectl delete -f /tmp/k8s/yml/{{component}}-{{type}}.yml"
+  ignore_errors: True
+  when: "ansible_ssh_host == groups['k8s-master'][0] and component != 'ingress'"
+
+- name: "Create a kubernetes {{component}}-{{type}}"
+  shell: "kubectl apply -f /tmp/k8s/yml/{{component}}-{{type}}.yml"
+  ignore_errors: True
+  when: "ansible_ssh_host == groups['k8s-master'][0]"

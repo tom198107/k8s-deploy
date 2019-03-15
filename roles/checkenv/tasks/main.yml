@@ -1,0 +1,107 @@
+---
+
+- name: if subnet 10.1 exists
+  shell: "code=$(ip a|grep 10.1 | wc -l) && exit $code"
+  ignore_errors: True
+
+# - name: if ntp server is ok
+#   shell: "ping {{item.ip}} -c 1 >> /dev/null && exit 0 || exit 1"
+#   with_items:
+#     - { ip: '10.72.135.60' }
+#     - { ip: '172.19.1.63'}
+#   ignore_errors: True
+
+# - name: check yum repo
+#   shell: "code=$(yum repolist 1>>/dev/null 2>>/tmp/tmp.repo && cat /tmp/tmp.repo|wc -l && rm -rf /tmp/tmp.repo >> /dev/null) && exit $code"
+#   ignore_errors: True
+
+- name: install ipvs net components
+  become: yes
+  become_user: root
+  become_method: sudo
+  yum: name=ipvsadm
+
+- name: check extra disk available
+  stat:
+    path: /data01
+  register: result
+
+- name: show result 
+  debug:
+    msg: " Whoops, The /data01 not ready! "
+  when: result.stat.exists == False
+
+- name: check docker's flannel path exists
+  stat:
+    path: /etc/systemd/system/docker.service.d
+  register: result
+
+- name: create docker's flannel path
+  become: yes
+  become_user: root
+  become_method: sudo 
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+  when: not result.stat.exists
+
+- name: check k8s's components and certs path exists
+  stat:
+    path: /opt/k8s
+  register: result
+
+- name: create k8s's components and certs path
+  become: yes
+  become_user: root
+  become_method: sudo
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "/opt/docker"
+    - "/opt/k8s"
+    - "/opt/ssl"
+    - "/opt/local/cfssl"
+    - "/etc/kubernetes"
+    - "/etc/kubernetes/ssl"
+    - "/opt/shell"
+    - "/var/lib/kubelet"
+    - "/var/lib/kube-proxy"
+    - "/etc/nginx"
+    - "/var/lib/registry"
+  # when: not result.stat.exists
+
+- name: copy docker registry and config file
+  become: yes
+  become_user: root
+  become_method: sudo
+  copy: src={{item.src}} dest={{item.dest}} 
+  ignore_errors: yes
+  with_items:    
+    - { src: 'config.yml', dest: '/opt/docker'}
+    - { src: 'start_registry.sh', dest: '/opt/docker'}
+    - { src: 'registry.zip', dest: '/opt/docker'}
+    - { src: 'coredns.zip', dest: '/opt/docker'}
+    - { src: 'alpine.zip', dest: '/opt/docker'}
+    - { src: 'defaultbackend.zip', dest: '/opt/docker'}
+    - { src: 'controller.zip', dest: '/opt/docker'}
+    - { src: 'dashboard.zip', dest: '/opt/docker'}
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
+
+- name: "Load registry images "
+  shell: "{{ item }}"
+  ignore_errors: yes
+  with_items:
+    - docker load -i /opt/docker/registry.zip
+    - docker load -i /opt/docker/coredns.zip
+    - docker load -i /opt/docker/alpine.zip
+    - docker load -i /opt/docker/defaultbackend.zip
+    - docker load -i /opt/docker/controller.zip
+    - docker load -i /opt/docker/dashboard.zip
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
+
+- name: docker registry file for docker
+  shell: 'sh /opt/docker/start_registry.sh'
+  ignore_errors: yes
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
+
