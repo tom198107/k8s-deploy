@@ -1,0 +1,19 @@
+
+- name: Deploy nginx on k8s as deployment
+  hosts: k8s-master
+  vars:
+    component: nginx
+    type: deployment
+  gather_facts: no
+  roles:
+    - paas
+
+
+- name: Deploy nginx on k8s as service
+  hosts: k8s-master
+  vars:
+    component: nginx
+    type: service
+  gather_facts: no
+  roles:
+    - paas

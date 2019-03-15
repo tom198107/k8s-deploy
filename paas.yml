@@ -1,0 +1,6 @@
+
+- name: Deploy  services
+  hosts: k8s-master
+  gather_facts: no
+  roles:
+    - paas

@@ -1,0 +1,19 @@
+
+- name: Deploy coredns on k8s as deployment
+  hosts: k8s-master
+  vars:
+    component: coredns
+    type: deployment
+  gather_facts: no
+  roles:
+    - paas
+
+
+- name: Deploy coredns on k8s as service
+  hosts: k8s-master
+  vars:
+    component: coredns
+    type: service
+  gather_facts: no
+  roles:
+    - paas

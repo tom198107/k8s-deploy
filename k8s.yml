@@ -1,0 +1,39 @@
+---
+# this initialization k8s cluster,just run once
+# - hosts: all
+#   roles:
+#     - common
+
+- hosts: k8s-ca-master
+  roles:
+   - { role: k8s/ca }
+
+- hosts: etcd-servers
+  roles:
+    - { role: k8s/etcd }
+
+#- hosts: k8s-master
+#  roles:
+#    - { role: k8s/master }
+
+#- hosts: k8s-workers
+#  roles:
+#    - { role: k8s/node }
+
+# if you wanna add new node to cluster ,you can add new node to new-workers,new-master,new-etcdservers in inventory file
+# uncomment the flow block
+
+# - hosts: new-workers
+#   roles:
+#     - common
+#     - { role: k8s/node }
+
+# - hosts: new-master
+#   roles:
+#     - common
+#     - { role: k8s/master }
+
+# - hosts: new-etcdservers
+#   roles:
+#     - common
+#     - { role: k8s/etcd }

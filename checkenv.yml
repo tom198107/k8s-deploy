@@ -1,0 +1,6 @@
+
+- name: check env
+  hosts: all
+  gather_facts: no
+  roles:
+    - checkenv

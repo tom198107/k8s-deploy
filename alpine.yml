@@ -1,0 +1,9 @@
+
+- name: Deploy alpine on k8s as deployment
+  hosts: k8s-master
+  vars:
+    component: alpine
+    type: deployment
+  gather_facts: no
+  roles:
+    - paas

@@ -1,0 +1,18 @@
+
+- name: Deploy nginx-ingress on k8s 
+  hosts: k8s-master
+  vars:
+    component: ingress
+    type: deployment
+  gather_facts: no
+  roles:
+    - paas
+
+- name: Deploy nginx-ingress on k8s as service
+  hosts: k8s-master
+  vars:
+    component: ingress
+    type: service
+  gather_facts: no
+  roles:
+    - paas
