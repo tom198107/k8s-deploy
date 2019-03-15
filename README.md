@@ -3,10 +3,6 @@
 2、自动化部署业务服务
 3、实现在deploy机器git clone脚本，执行ansible可以自动部署k8s环境，部署业务服务。
 ---UAT Environment---(ansible_deploy_20190111)
-| k8s01  | 52.163.243.35  | 52.163.243.35    | k8s  | K8sWelink@123  |
-| k8s02  | 13.76.197.1  | 10.0.1.26    | k8s  | K8sWelink@123  |
-| k8s03  | 13.67.61.54  | 10.0.1.27    | k8s  | K8sWelink@123  |
-| k8s04  | 13.76.212.4  | 10.0.1.28    | k8s  | K8sWelink@123  |
 
 #部署步骤 
 1、部署准备
@@ -16,7 +12,7 @@
 
 2、k8s环境部署：(非root用户  --ask-sudo-pass)
 ansible-playbook -i environments/sit/inventory checkenv.yml (将images上传到仓库)
-ansible-playbook -i environments/sit/inventory --ask-sudo-pass k8s.yml (ca、etcd)
+ansible-playbook -i environments/sit/inventory  k8s.yml (ca、etcd)
 ansible-playbook -i environments/sit/inventory common.yml (flannel、docker)
 ansible-playbook -i environments/sit/inventory k8s.yml (master、node)
 3、部署paas和saas服务

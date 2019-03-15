@@ -62,6 +62,7 @@
     - "/opt/k8s"
     - "/opt/ssl"
     - "/opt/local/cfssl"
+    - "/etc/docker"
     - "/etc/kubernetes"
     - "/etc/kubernetes/ssl"
     - "/opt/shell"
