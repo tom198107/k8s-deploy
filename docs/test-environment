@@ -1,0 +1,4 @@
+---cloudlink test Environment---(ansible_deploy_20190111 ,所有root账号密码：Cloulink123!)
+| kwethicbta04994  | 100.84.91.77    | wemeeting  | Cloulink123!    | etcd/k8s-master/k8s-worker/deploy | 
+| kwethicbta04995  | 100.84.112.106  | wemeeting  | Cloulink123!    | etcd/k8s-master/k8s-worker|
+| kwethicbta04998  | 100.84.105.120  | wemeeting  | Cloulink123!    | etcd/k8s-worker |

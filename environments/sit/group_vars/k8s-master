@@ -1,0 +1,6 @@
+#nginx-service
+nginx-service_image_tag: latest
+nginx-service_env_vars:
+
+#  - key: SPRING_PROFILES_ACTIVE
+#    value: prod

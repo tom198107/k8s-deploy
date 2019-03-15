@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# check default key file
+file="/home/k8s/.ssh/id_rsa.pub"
+if [ -f "${file}" ]
+then
+    echo "Use your default key file: ${file}"
+else
+    echo "Can not found key file, let's create one."
+    ssh-keygen
+fi
+
+# double check
+if [ ! -f "${file}" ]; then
+    echo "Can not load your ssh key, please generate it and retry!"
+    exit 1
+fi
+
+# copy ssh key to another hosts
+cat $1 | while read ip
+do
+    ipcalc -cs "$ip"
+    if [ "$?" = "1" ]
+    then
+        echo "Copying the key to [$ip]"
+        ssh-copy-id k8s@$ip
+    else
+        echo "Skip the invalid IP address: $ip"
+    fi
+done
