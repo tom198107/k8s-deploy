@@ -53,11 +53,11 @@
     - docker load -i /opt/k8s/pause-amd64.zip
     - docker load -i /opt/k8s/nginx.zip
 
-- name: "Delete csr auth file"
-  shell: "{{ item }}"
-  with_items:
-    - rm -rf /etc/kubernetes/ssl/kubelet-*
-    - rm -rf /etc/kubernetes/ssl/ssl
+# - name: "Delete csr auth file"
+#   shell: "{{ item }}"
+#   with_items:
+#     - rm -rf /etc/kubernetes/ssl/kubelet-*
+#     - rm -rf /etc/kubernetes/ssl/ssl
 
 - name: "Start kubelet service"
   systemd:
