@@ -4,9 +4,9 @@
 #   roles:
 #     - common
 
-# - hosts: k8s-ca-master
-#   roles:
-#    - { role: k8s/ca }
+- hosts: k8s-ca-master
+  roles:
+   - { role: k8s/ca }
 
 # - hosts: etcd-servers
 #   roles:
