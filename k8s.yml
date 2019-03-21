@@ -4,17 +4,17 @@
 #   roles:
 #     - common
 
-# - hosts: k8s-ca-master
-#   roles:
-#    - { role: k8s/ca }
+- hosts: k8s-ca-master
+  roles:
+   - { role: k8s/ca }
 
-# - hosts: etcd-servers
-#   roles:
-#     - { role: k8s/etcd }
+- hosts: etcd-servers
+  roles:
+    - { role: k8s/etcd }
 
-# - hosts: k8s-master
-#   roles:
-#     - { role: k8s/master }
+- hosts: k8s-master
+  roles:
+    - { role: k8s/master }
 
 - hosts: k8s-workers
   roles:

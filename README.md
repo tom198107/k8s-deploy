@@ -8,12 +8,14 @@
 | k8s03  | 13.67.61.54  | 10.0.1.27    | 
 | k8s04  | 13.76.212.4  | 10.0.1.28    | 
 
+kubernetes 1.10.1
+https://jicki.me/kubernetes/2018/04/23/kubernetes-1.10.1/
+
 #部署步骤 
 1、部署准备
 修改ips-file服务器,执行init-ssh-key (生成互信)
 部署ansible（---待补充---），并修改environment的服务器和变量
-搭建docker-registry,将镜像上传
-
+搭建docker-registry,将镜像上传(checkenv)
 2、k8s环境部署：(非root用户  --ask-sudo-pass)
 ansible-playbook -i environments/sit/inventory checkenv.yml (将images上传到仓库)
 ansible-playbook -i environments/sit/inventory  k8s.yml (ca、etcd)

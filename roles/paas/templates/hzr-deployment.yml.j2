@@ -1,0 +1,19 @@
+---
+
+apiVersion: extensions/v1beta1 
+kind: Deployment 
+metadata: 
+  name: hzrservice
+spec: 
+  replicas: 2
+  template: 
+    metadata: 
+      labels: 
+        name: hzrservice 
+    spec: 
+      containers: 
+        - name: nginx 
+          image: {{groups['k8s-master'][0]}}:5000/spring-boot-hzr:2.0.0 
+          imagePullPolicy: IfNotPresent
+          ports: 
+            - containerPort: 8080
