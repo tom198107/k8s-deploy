@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: mysql
-        image: {{groups['k8s-master'][0]}}:5000/mysql:2.0.0 
+        image: {{groups['k8s-master'][0]}}:5000/mysql:latest 
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3306
