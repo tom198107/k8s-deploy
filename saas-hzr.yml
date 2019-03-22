@@ -1,0 +1,19 @@
+
+- name: Deploy hzrservice on k8s as deployment
+  hosts: k8s-master
+  vars:
+    component: hzrservice
+    type: deployment
+  gather_facts: no
+  roles:
+    - paas
+
+
+- name: Deploy hzrservice on k8s as service
+  hosts: k8s-master
+  vars:
+    component: hzrservice
+    type: service
+  gather_facts: no
+  roles:
+    - paas
