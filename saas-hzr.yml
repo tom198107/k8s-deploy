@@ -2,11 +2,30 @@
 - name: Deploy hzrservice on k8s as deployment
   hosts: k8s-master
   vars:
+    component: mysql
+    type: deployment
+  gather_facts: no
+  roles:
+    - saas
+
+
+- name: Deploy hzrservice on k8s as service
+  hosts: k8s-master
+  vars:
+    component: mysql
+    type: service
+  gather_facts: no
+  roles:
+    - saas
+
+- name: Deploy hzrservice on k8s as deployment
+  hosts: k8s-master
+  vars:
     component: hzr
     type: deployment
   gather_facts: no
   roles:
-    - paas
+    - saas
 
 
 - name: Deploy hzrservice on k8s as service
@@ -16,4 +35,4 @@
     type: service
   gather_facts: no
   roles:
-    - paas
+    - saas

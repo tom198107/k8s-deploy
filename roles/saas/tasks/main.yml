@@ -1,0 +1,22 @@
+
+- name: "Mkdir /tmp/k8s/yml2/"
+  file:
+    path: "/tmp/k8s/yml2/"
+    state: directory
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
+
+- name: "Generate Deployment YAML"
+  template:
+    src: "{{component}}-{{type}}.yml.j2"
+    dest: "/tmp/k8s/yml2/{{component}}-{{type}}.yml"
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
+
+- name: "delete a kubernetes {{component}}-{{type}}"
+  shell: "kubectl delete -f /tmp/k8s/yml2/{{component}}-{{type}}.yml"
+  ignore_errors: True
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
+
+- name: "Create a kubernetes {{component}}-{{type}}"
+  shell: "kubectl apply -f /tmp/k8s/yml2/{{component}}-{{type}}.yml"
+  ignore_errors: True
+  when: "ansible_ssh_host == groups['k8s-master'][0]"
