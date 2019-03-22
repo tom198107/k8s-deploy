@@ -1,5 +1,8 @@
 
 - name: "Mkdir /tmp/k8s/yml2/"
+  become: yes
+  become_user: root
+  become_method: sudo
   file:
     path: "/tmp/k8s/yml2/"
     state: directory

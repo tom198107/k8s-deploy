@@ -70,6 +70,9 @@
     - "/var/lib/kube-proxy"
     - "/etc/nginx"
     - "/var/lib/registry"
+    - "/tmp/k8s/yml"
+    - "/tmp/k8s/yml2"
+
   # when: not result.stat.exists
 
 - name: copy docker registry and config file
