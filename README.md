@@ -23,7 +23,7 @@ ansible-playbook -i environments/sit/inventory common.yml (flannel、docker)
 ansible-playbook -i environments/sit/inventory k8s.yml (master、node)
 3、部署paas和saas服务
 ansible-playbook -i environments/sit/inventory xxxpaas.yml(dns、nginx、alpine、ingress、dashborad)
-ansible-playbook -i environments/sit/inventory xxxsaas.yml(demo)
+ansible-playbook -i environments/sit/inventory saas-xxx.yml(demo)
 
 #20190111 z00256434
 1、配置k8s集群，及关联server

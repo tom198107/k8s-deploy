@@ -6,6 +6,7 @@ spec:
   containers:
   - name: alpine
     image: {{groups['k8s-master'][0]}}:5000/alpine:latest
+    imagePullPolicy: IfNotPresent
     command:
     - sh
     - -c
