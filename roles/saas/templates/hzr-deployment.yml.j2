@@ -13,7 +13,7 @@ spec:
     spec: 
       containers: 
         - name: nginx 
-          image: {{groups['k8s-master'][0]}}:5000/spring-boot-hzr:2.0.0 
+          image: {{groups['k8s-master'][0]}}:5000/spring-boot-hzr:2.0.1 
           imagePullPolicy: IfNotPresent
           ports: 
             - containerPort: 8080
